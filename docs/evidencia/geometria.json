@@ -1,0 +1,577 @@
+{
+  "combinacion_1366x900": {
+    "scenario": "combinacion",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 2.622865699988324,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 716,
+      "reqheight": 497
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 663,
+      "reqheight": 444
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 715,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "familia_1366x900": {
+    "scenario": "familia",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 3.4426588999922387,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 716,
+      "reqheight": 497
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 663,
+      "reqheight": 444
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 715,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "fracciones_1024x768": {
+    "scenario": "fracciones",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1024,
+      768
+    ],
+    "calculate_render_s": 1.8785101000103168,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1024,
+      "height": 584,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 988,
+      "height": 531,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 20,
+      "y": 239,
+      "width": 984,
+      "height": 482,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 32,
+      "y": 497,
+      "width": 945,
+      "height": 249,
+      "reqheight": 249
+    },
+    "windows_window_dpi": 120
+  },
+  "incompatible_1280x720": {
+    "scenario": "incompatible",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1280,
+      720
+    ],
+    "calculate_render_s": 0.7985362999897916,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1280,
+      "height": 536,
+      "reqheight": 567
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1244,
+      "height": 483,
+      "reqheight": 514
+    },
+    "definir": {
+      "x": 20,
+      "y": 239,
+      "width": 1240,
+      "height": 434,
+      "reqheight": 465
+    },
+    "editores": {
+      "x": 32,
+      "y": 458,
+      "width": 1216,
+      "height": 203,
+      "reqheight": 234
+    }
+  },
+  "incompatible_1366x900": {
+    "scenario": "incompatible",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 6.2967700000153854,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 716,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 663,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 20,
+      "y": 239,
+      "width": 1326,
+      "height": 614,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 32,
+      "y": 458,
+      "width": 1287,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "ocho_1024x768": {
+    "scenario": "ocho",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1024,
+      768
+    ],
+    "calculate_render_s": 0.6137122999934945,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1024,
+      "height": 584,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 988,
+      "height": 531,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 20,
+      "y": 239,
+      "width": 984,
+      "height": 482,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 32,
+      "y": 497,
+      "width": 945,
+      "height": 249,
+      "reqheight": 249
+    }
+  },
+  "ocho_820x720": {
+    "scenario": "ocho",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      820,
+      720
+    ],
+    "calculate_render_s": 2.198912099993322,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 820,
+      "height": 536,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 784,
+      "height": 483,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 20,
+      "y": 239,
+      "width": 780,
+      "height": 434,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 32,
+      "y": 497,
+      "width": 741,
+      "height": 249,
+      "reqheight": 249
+    },
+    "windows_window_dpi": 120
+  },
+  "producto_1280x720": {
+    "scenario": "producto",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1280,
+      720
+    ],
+    "calculate_render_s": 0.898536900000181,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1280,
+      "height": 536,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1244,
+      "height": 483,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 730,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "producto_1366x768": {
+    "scenario": "producto",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      768
+    ],
+    "calculate_render_s": 0.4810494999983348,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 584,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 531,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 730,
+      "height": 234,
+      "reqheight": 234
+    },
+    "windows_window_dpi": 120
+  },
+  "producto_1366x900": {
+    "scenario": "producto",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 2.8268496000091545,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 716,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 663,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 668,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "producto_1920x1080": {
+    "scenario": "producto",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1920,
+      1080
+    ],
+    "calculate_render_s": 0.9061478000076022,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1920,
+      "height": 896,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1884,
+      "height": 843,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 730,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "sistema_1366x900": {
+    "scenario": "sistema",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 1.2178784999996424,
+    "taller": {
+      "x": 0,
+      "y": 0,
+      "width": 1,
+      "height": 1,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 0,
+      "y": 0,
+      "width": 1,
+      "height": 1,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 2,
+      "y": 3,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 2,
+      "y": 249,
+      "width": 730,
+      "height": 234,
+      "reqheight": 234
+    }
+  },
+  "vectores_1366x900": {
+    "scenario": "vectores",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.6",
+    "tk": "8.6.15",
+    "tk_scaling": 1.6683087027914612,
+    "screen": [
+      1920,
+      1080
+    ],
+    "client": [
+      1366,
+      900
+    ],
+    "calculate_render_s": 3.761013900017133,
+    "taller": {
+      "x": 0,
+      "y": 184,
+      "width": 1366,
+      "height": 716,
+      "reqheight": 544
+    },
+    "notebook": {
+      "x": 18,
+      "y": 192,
+      "width": 1330,
+      "height": 663,
+      "reqheight": 491
+    },
+    "definir": {
+      "x": 18,
+      "y": 192,
+      "width": 1,
+      "height": 1,
+      "reqheight": 355
+    },
+    "editores": {
+      "x": 18,
+      "y": 438,
+      "width": 637,
+      "height": 234,
+      "reqheight": 234
+    }
+  }
+}

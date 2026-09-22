@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.docx_review/
+.pytest_cache/
+.ruff_cache/
+*.tmp

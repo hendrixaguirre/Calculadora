@@ -1,0 +1,11 @@
+{
+  "zip": "Programa 3_Grupo 5_Velasquez_Aguirre.zip",
+  "archivos": 14,
+  "pruebas": 117,
+  "pruebas_exit": 0,
+  "lanzador_exit": 0,
+  "dependencias": "solo biblioteca estándar",
+  "ruta_prueba": "C:\\Users\\fanvelzs\\AppData\\Local\\Temp\\AXION revisión con espacios xl_q_fme\\extracción",
+  "sha256": "72d1cdf1ceed5bd3bb7a6f66a16ed9c2a67f16b371a836e7e631380e45bf06f5",
+  "nota": "Tras las pruebas se corrigió únicamente la descripción de Ctrl+S en README; contenido final verificado byte a byte contra el proyecto."
+}

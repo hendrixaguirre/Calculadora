@@ -1,0 +1,11 @@
+{
+  "plataforma": "Windows-11-10.0.26200-SP0",
+  "python": "3.14.6",
+  "tk": "8.6.15",
+  "caso": "A 2x3 por B 3x2",
+  "motor_repeticiones": 1000,
+  "motor_ms": 0.043669800012139603,
+  "render_repeticiones": 10,
+  "render_ms": 3.6414300004253164,
+  "nota": "Render de vistas sobre widgets existentes; excluye iniciar app y guardar historial."
+}
