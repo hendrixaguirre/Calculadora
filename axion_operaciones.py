@@ -15,11 +15,19 @@ from axion_core import (Numero, Matriz, ResultadoCalculo, a_fraccion,
 MAX_DIMENSION = 8
 MAX_PEGADO = 4096
 OPERACIONES = {
-    'vector_suma': 'Sumar vectores', 'vector_resta': 'Restar vectores',
+    'vector_suma': 'Sumar vectores',
+    'vector_resta': 'Restar vectores',
     'vector_escalar': 'Multiplicar vector por escalar',
-    'matriz_suma': 'Sumar matrices', 'matriz_resta': 'Restar matrices',
+
+    'matriz_suma': 'Sumar matrices',
+    'matriz_resta': 'Restar matrices',
     'matriz_escalar': 'Multiplicar matriz por escalar',
-    'matriz_producto': 'Multiplicar matrices', 'combinacion': 'Comprobar combinación',
+    'matriz_producto': 'Multiplicar matrices',
+
+    'combinacion': 'Comprobar combinación',
+
+    'propiedad_distributiva': 'Propiedad distributiva A(u + v) = Au + Av',
+    'propiedad_escalar': 'Propiedad del escalar A(cu) = c(Au)',
 }
 
 
@@ -151,6 +159,125 @@ def multiplicar_matrices(a, b):
         salida.append(fila)
     return salida
 
+def multiplicar_matriz_vector(matriz, vector):
+    """Calcula A·u y devuelve el resultado como vector columna lógico."""
+
+    matriz = validar_matriz(matriz, 'Matriz A')
+    vector = validar_vector(vector, 'Vector u')
+
+    if len(matriz[0]) != len(vector):
+        raise ValueError(
+            f'A tiene {len(matriz[0])} columnas y u tiene '
+            f'{len(vector)} componentes. Las dimensiones deben coincidir.'
+        )
+
+    resultado = []
+
+    for fila in matriz:
+        suma = Fraction(0)
+
+        for j in range(len(vector)):
+            suma += fila[j] * vector[j]
+
+        resultado.append(suma)
+
+    return resultado
+
+
+def verificar_propiedad_producto_matriz_vector(
+    operacion,
+    matriz,
+    datos,
+    escalar=None,
+):
+    """Comprueba una propiedad del producto matriz-vector."""
+
+    matriz = validar_matriz(matriz, 'Matriz A')
+
+    if operacion == 'propiedad_distributiva':
+
+        if len(datos) != 2:
+            raise ValueError(
+                'La propiedad distributiva requiere los vectores u y v.'
+            )
+
+        u = validar_vector(datos[0], 'Vector u')
+        v = validar_vector(datos[1], 'Vector v')
+
+        if len(u) != len(v):
+            raise ValueError(
+                'Los vectores u y v deben tener la misma dimensión.'
+            )
+
+        if len(matriz[0]) != len(u):
+            raise ValueError(
+                f'A tiene {len(matriz[0])} columnas, pero los vectores '
+                f'tienen {len(u)} componentes.'
+            )
+
+        # Lado izquierdo:
+        # A(u + v)
+        u_mas_v = sumar_vectores(u, v)
+        lado_izquierdo = multiplicar_matriz_vector(matriz, u_mas_v)
+
+        # Lado derecho:
+        # Au + Av
+        au = multiplicar_matriz_vector(matriz, u)
+        av = multiplicar_matriz_vector(matriz, v)
+        lado_derecho = sumar_vectores(au, av)
+
+        se_cumple = lado_izquierdo == lado_derecho
+
+        return {
+            'operacion': operacion,
+            'matriz': matriz,
+            'u': u,
+            'v': v,
+            'u_mas_v': u_mas_v,
+            'au': au,
+            'av': av,
+            'lado_izquierdo': lado_izquierdo,
+            'lado_derecho': lado_derecho,
+            'se_cumple': se_cumple,
+        }
+
+    if operacion == 'propiedad_escalar':
+
+        u = validar_vector(datos, 'Vector u')
+        escalar = a_fraccion(escalar)
+
+        if len(matriz[0]) != len(u):
+            raise ValueError(
+                f'A tiene {len(matriz[0])} columnas, pero u tiene '
+                f'{len(u)} componentes.'
+            )
+
+        # Lado izquierdo:
+        # A(cu)
+        cu = escalar_vector(escalar, u)
+        lado_izquierdo = multiplicar_matriz_vector(matriz, cu)
+
+        # Lado derecho:
+        # c(Au)
+        au = multiplicar_matriz_vector(matriz, u)
+        lado_derecho = escalar_vector(escalar, au)
+
+        se_cumple = lado_izquierdo == lado_derecho
+
+        return {
+            'operacion': operacion,
+            'matriz': matriz,
+            'u': u,
+            'escalar': escalar,
+            'cu': cu,
+            'au': au,
+            'lado_izquierdo': lado_izquierdo,
+            'lado_derecho': lado_derecho,
+            'se_cumple': se_cumple,
+        }
+
+    raise ValueError('Propiedad del producto matriz-vector no reconocida.')
+
 
 def resolver_ax_b(a, b, metodo='gauss-jordan') -> ResultadoCalculo:
     """Construye [A|b] (b no es incógnita) y reutiliza la eliminación existente."""
@@ -196,13 +323,13 @@ def interpretar_tabla(texto, nombre='Matriz A') -> list[list[str]]:
 
 @dataclass
 class ResultadoOperacion:
-    """Instantánea exacta; los detalles por celda se generan bajo demanda."""
     operacion: str
     a: Matriz
     b: Matriz | None
     escalar: Fraction | None
     salida: Matriz | None
     sistema: ResultadoCalculo | None = None
+    propiedad: dict | None = None
 
     def detalle(self, i, j, modo='fracciones') -> str:
         if self.salida is None or not (0 <= i < len(self.salida) and 0 <= j < len(self.salida[0])):
@@ -230,30 +357,159 @@ def validar_operacion(operacion, a, b=None, escalar=None):
     El historial solo necesita este contrato; abrirlo no debe repetir cálculos.
     Devuelve copias racionales de A, B y λ.
     """
+
     if operacion not in OPERACIONES:
         raise ValueError('Operación no reconocida')
-    a = validar_matriz(a, 'Vectores v' if operacion == 'combinacion' else 'Operando A / u')
-    b = validar_matriz(b, 'Objetivo b' if operacion == 'combinacion' else 'Operando B / v') if b is not None else None
-    if operacion.startswith('vector_') and (len(a) != 1 or (b is not None and len(b) != 1)):
-        raise ValueError('Introduce cada vector como una sola fila de componentes')
-    if operacion.endswith('escalar'):
+
+    a = validar_matriz(
+        a,
+        'Vectores v' if operacion == 'combinacion' else 'Operando A / u'
+    )
+
+    b = (
+        validar_matriz(
+            b,
+            'Objetivo b' if operacion == 'combinacion' else 'Operando B / v'
+        )
+        if b is not None
+        else None
+    )
+
+    # =========================================================
+    # PROPIEDAD DISTRIBUTIVA
+    # A(u + v) = Au + Av
+    # =========================================================
+    if operacion == 'propiedad_distributiva':
+
+        if b is None:
+            raise ValueError(
+                'La propiedad distributiva requiere los vectores u y v.'
+            )
+
+        if len(b) != 2:
+            raise ValueError(
+                'Debes introducir exactamente dos vectores: u y v.'
+            )
+
+        # A debe tener tantas columnas como componentes
+        # tengan los vectores.
+        if len(a[0]) != len(b[0]):
+            raise ValueError(
+                'La matriz A y los vectores u y v deben ser compatibles.'
+            )
+
+        # u y v deben tener la misma dimensión.
+        if len(b[0]) != len(b[1]):
+            raise ValueError(
+                'Los vectores u y v deben tener la misma dimensión.'
+            )
+
+        return a, b, None
+
+    # =========================================================
+    # PROPIEDAD DEL ESCALAR
+    # A(cu) = c(Au)
+    # =========================================================
+    elif operacion == 'propiedad_escalar':
+
+        if b is None:
+            raise ValueError(
+                'La propiedad del escalar requiere el vector u.'
+            )
+
+        if len(b) != 1:
+            raise ValueError(
+                'Debes introducir un único vector u.'
+            )
+
+        # A debe tener tantas columnas como componentes tenga u.
+        if len(a[0]) != len(b[0]):
+            raise ValueError(
+                'A y u no son compatibles: las columnas de A '
+                'deben coincidir con la dimensión de u.'
+            )
+
         try:
             escalar = a_fraccion(escalar)
         except (ValueError, ZeroDivisionError, TypeError) as error:
-            raise ValueError(f'Escalar λ: {error}. Introduce un racional válido') from error
+            raise ValueError(
+                f'Escalar λ: {error}. '
+                'Introduce un racional válido'
+            ) from error
+
+        return a, b, escalar
+
+    # =========================================================
+    # VALIDACIÓN DE VECTORES
+    # =========================================================
+    if operacion.startswith('vector_') and (
+        len(a) != 1
+        or (b is not None and len(b) != 1)
+    ):
+        raise ValueError(
+            'Introduce cada vector como una sola fila de componentes'
+        )
+
+    # =========================================================
+    # OPERACIONES CON ESCALAR
+    # =========================================================
+    if operacion.endswith('escalar'):
+
+        try:
+            escalar = a_fraccion(escalar)
+        except (ValueError, ZeroDivisionError, TypeError) as error:
+            raise ValueError(
+                f'Escalar λ: {error}. '
+                'Introduce un racional válido'
+            ) from error
+
+    # =========================================================
+    # OPERACIONES QUE NECESITAN SEGUNDO OPERANDO
+    # =========================================================
     elif b is None:
         raise ValueError('Falta el segundo operando')
+
+    # =========================================================
+    # COMBINACIÓN LINEAL
+    # =========================================================
     elif operacion == 'combinacion':
+
         if len(b) != 1:
-            raise ValueError('Objetivo b: introduce un único vector fila')
+            raise ValueError(
+                'Objetivo b: introduce un único vector fila'
+            )
+
         if len(a[0]) != len(b[0]):
-            raise ValueError('Todos los vectores y b deben tener la misma dimensión ambiente n')
+            raise ValueError(
+                'Todos los vectores y b deben tener la misma '
+                'dimensión ambiente n'
+            )
+
+    # =========================================================
+    # PRODUCTO DE MATRICES
+    # =========================================================
     elif operacion == 'matriz_producto':
+
         if len(a[0]) != len(b):
-            raise ValueError(f'A tiene {len(a[0])} columnas y B tiene {len(b)} filas. '
-                             'Para AB estas cantidades deben coincidir. Ajusta las dimensiones')
+            raise ValueError(
+                f'A tiene {len(a[0])} columnas y B tiene {len(b)} filas. '
+                'Para AB estas cantidades deben coincidir. '
+                'Ajusta las dimensiones'
+            )
+
+    # =========================================================
+    # SUMA / RESTA DE MATRICES
+    # =========================================================
     elif (len(a), len(a[0])) != (len(b), len(b[0])):
-        raise ValueError('Los operandos de suma/resta deben tener las mismas dimensiones')
+
+        raise ValueError(
+            'Los operandos de suma/resta deben tener '
+            'las mismas dimensiones'
+        )
+
+    # =========================================================
+    # RETORNO
+    # =========================================================
     return a, b, escalar if operacion.endswith('escalar') else None
 
 
@@ -280,30 +536,141 @@ def texto_tabla(matriz, modo='fracciones'):
 
 
 def resumen_combinacion(resultado: ResultadoCalculo, modo='fracciones') -> str:
-    """Distingue existencia/unicidad y muestra evidencia de toda la familia."""
+    """Distingue existencia/unicidad y analiza dependencia lineal del conjunto."""
+
     s = resultado
+
     f = lambda x: formatear_numero(x, modo)
+
     vector = lambda x: '(' + ', '.join(f(v) for v in x) + ')'
-    rangos = f'rango(V) = {s.rango_a}; rango([V|b]) = {s.rango_aumentada}; k = {s.variables}'
+
+    rangos = (
+        f'rango(V) = {s.rango_a}; '
+        f'rango([V|b]) = {s.rango_aumentada}; '
+        f'k = {s.variables}'
+    )
+
+    # ---------------------------------------------------------
+    # ANÁLISIS DE DEPENDENCIA LINEAL
+    #
+    # Para Vc = 0:
+    #
+    # rango(V) = k  -> únicamente c = 0
+    #               -> solución trivial
+    #               -> linealmente independiente
+    #
+    # rango(V) < k  -> existen soluciones no nulas
+    #               -> solución no trivial
+    #               -> linealmente dependiente
+    # ---------------------------------------------------------
+
+    if s.rango_a == s.variables:
+        tipo_solucion = "trivial"
+        dependencia = "linealmente independiente"
+    else:
+        tipo_solucion = "no trivial"
+        dependencia = "linealmente dependiente"
+
+    analisis_dependencia = (
+        f'Solución del sistema homogéneo Vc = 0: {tipo_solucion}.\n'
+        f'Conjunto de vectores: {dependencia}.'
+    )
+
+    # ---------------------------------------------------------
+    # SISTEMA INCONSISTENTE
+    # ---------------------------------------------------------
+
     if s.clasificacion == 'inconsistente':
-        return f'No es combinación lineal.\n{rangos}\nContradicción: 0 = {f(s.fila_contradiccion[-1])}.\nNo existen coeficientes que reconstruyan b.'
+        return (
+            f'No es combinación lineal.\n'
+            f'{rangos}\n\n'
+            f'{analisis_dependencia}\n\n'
+            f'Contradicción: 0 = {f(s.fila_contradiccion[-1])}.\n'
+            f'No existen coeficientes que reconstruyan b.'
+        )
+
+    # ---------------------------------------------------------
+    # SOLUCIÓN ÚNICA
+    # ---------------------------------------------------------
+
     if s.solucion_unica is not None:
-        desarrollo = ' + '.join(f'({f(c)})·v{i+1}' for i, c in enumerate(s.solucion_unica))
-        valores = '\n'.join(f'Componente {l.indice_ecuacion+1}: {f(l.valor_izquierdo)} = {f(l.lado_derecho)}; diferencia {f(l.diferencia)}' for l in s.verificacion)
-        return (f'Sí es combinación lineal: representación única.\n{rangos}\n'
-                f'c = {vector(s.solucion_unica)}\nb = {desarrollo}\n'
-                f'Verificación Vc=b: {"correcta" if all(l.valida for l in s.verificacion) else "fallida"}\n{valores}')
-    lineas = [f'Sí es combinación lineal: infinitas representaciones.\n{rangos}',
-              'c = cₚ + ' + ' + '.join(f't{j+1}·d{j+1}' for j in range(len(s.vectores_direccion))),
-              f'cₚ = {vector(s.solucion_particular)}']
+
+        desarrollo = ' + '.join(
+            f'({f(c)})·v{i+1}'
+            for i, c in enumerate(s.solucion_unica)
+        )
+
+        valores = '\n'.join(
+            f'Componente {l.indice_ecuacion + 1}: '
+            f'{f(l.valor_izquierdo)} = '
+            f'{f(l.lado_derecho)}; '
+            f'diferencia {f(l.diferencia)}'
+            for l in s.verificacion
+        )
+
+        return (
+            f'Sí es combinación lineal: representación única.\n'
+            f'{rangos}\n\n'
+            f'{analisis_dependencia}\n\n'
+            f'c = {vector(s.solucion_unica)}\n'
+            f'b = {desarrollo}\n'
+            f'Verificación Vc=b: '
+            f'{"correcta" if all(l.valida for l in s.verificacion) else "fallida"}\n'
+            f'{valores}'
+        )
+
+    # ---------------------------------------------------------
+    # INFINITAS SOLUCIONES
+    # ---------------------------------------------------------
+
+    lineas = [
+        f'Sí es combinación lineal: infinitas representaciones.\n'
+        f'{rangos}',
+
+        '',
+
+        analisis_dependencia,
+
+        '',
+
+        'c = cₚ + ' +
+        ' + '.join(
+            f't{j+1}·d{j+1}'
+            for j in range(len(s.vectores_direccion))
+        ),
+
+        f'cₚ = {vector(s.solucion_particular)}'
+    ]
+
     for j, d in enumerate(s.vectores_direccion):
-        lineas.append(f'd{j+1} = {vector(d)}')
+        lineas.append(
+            f'd{j+1} = {vector(d)}'
+        )
+
     for i in range(s.variables):
-        lineas.append(f'c{i+1} = ({f(s.solucion_particular[i])})' + ''.join(f' + ({f(d[i])})·t{j+1}' for j, d in enumerate(s.vectores_direccion) if d[i]))
-    lineas.extend([f'{len(s.variables_libres)} parámetros reales libres: columnas sin pivote.',
-                  'Los vᵢ son los vectores dados; los dⱼ son direcciones de los coeficientes.',
-                  f'Verificado Vcₚ=b: {"correcto" if s.verificacion_particular else "fallido"}',
-                  f'Verificado Vdⱼ=0 para TODAS las direcciones: {"correcto" if s.verificacion_direcciones else "fallido"}'])
+        lineas.append(
+            f'c{i+1} = ({f(s.solucion_particular[i])})'
+            + ''.join(
+                f' + ({f(d[i])})·t{j+1}'
+                for j, d in enumerate(s.vectores_direccion)
+                if d[i]
+            )
+        )
+
+    lineas.extend([
+        f'{len(s.variables_libres)} parámetros reales libres: '
+        f'columnas sin pivote.',
+
+        'Los vᵢ son los vectores dados; '
+        'los dⱼ son direcciones de los coeficientes.',
+
+        f'Verificado Vcₚ=b: '
+        f'{"correcto" if s.verificacion_particular else "fallido"}',
+
+        f'Verificado Vdⱼ=0 para TODAS las direcciones: '
+        f'{"correcto" if s.verificacion_direcciones else "fallido"}'
+    ])
+
     return '\n'.join(lineas)
 
 

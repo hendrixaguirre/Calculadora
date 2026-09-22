@@ -172,6 +172,59 @@ class ResultadoCalculo:
     verificacion: list[LineaVerificacion] = field(default_factory=list)
     conclusion: str = ""
 
+    # Análisis de dependencia lineal
+    es_homogeneo: bool = False
+    tipo_solucion_homogenea: str = "no aplica"
+    dependencia_lineal: str = "no aplica"
+    
+def analizar_dependencia_lineal(
+    resultado: ResultadoCalculo,
+) -> tuple[bool, str, str]:
+    """Determina la trivialidad y dependencia lineal de un sistema homogéneo.
+
+    Para un sistema A·x = 0:
+
+    - solución únicamente nula -> trivial e independiente
+    - existencia de soluciones no nulas -> no trivial y dependiente
+
+    En sistemas no homogéneos, el análisis de dependencia no aplica.
+    """
+
+    # Un sistema es homogéneo cuando todos los términos independientes
+    # de la columna b son iguales a cero.
+    es_homogeneo = all(
+        fila[-1] == 0
+        for fila in resultado.original
+    )
+
+    if not es_homogeneo:
+        return False, "no aplica", "no aplica"
+
+    # Si existen variables libres, existen soluciones diferentes
+    # de la solución cero.
+    if resultado.clasificacion == "infinitas" or resultado.variables_libres:
+        return (
+            True,
+            "no trivial",
+            "linealmente dependiente",
+        )
+
+    # Si el sistema homogéneo tiene solución única, esa solución
+    # necesariamente es la solución trivial.
+    if resultado.clasificacion == "unica":
+        return (
+            True,
+            "trivial",
+            "linealmente independiente",
+        )
+
+    # Un sistema homogéneo no debería ser inconsistente,
+    # pero dejamos este caso protegido.
+    return (
+        True,
+        "no aplica",
+        "no aplica",
+    )
 
 def _celdas_modificadas(antes: Matriz, despues: Matriz) -> list[CeldaModificada]:
     return [
@@ -617,8 +670,16 @@ def resolver_sistema(
             "El sistema es consistente y contiene variables libres. Cada parámetro real "
             "genera una solución diferente."
         )
-    return resultado
 
+    # Analizar si el sistema es homogéneo y determinar
+    # si su solución es trivial o no trivial.
+    (
+        resultado.es_homogeneo,
+        resultado.tipo_solucion_homogenea,
+        resultado.dependencia_lineal,
+    ) = analizar_dependencia_lineal(resultado)
+
+    return resultado
 
 def texto_matriz(
     matriz: Matriz, modo: str = "fracciones", precision: int = 4,
