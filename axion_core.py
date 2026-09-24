@@ -681,6 +681,13 @@ def resolver_sistema(
 
     return resultado
 
+def corchetes_matriz(filas: int) -> list[tuple[str, str]]:
+    """Segmentos de un único par de corchetes para todas las filas."""
+    if filas == 1:
+        return [("[", "]")]
+    return [("⎡", "⎤")] + [("⎢", "⎥")] * (filas - 2) + [("⎣", "⎦")]
+
+
 def texto_matriz(
     matriz: Matriz, modo: str = "fracciones", precision: int = 4,
     prefijo_fila: bool = False,
@@ -689,11 +696,11 @@ def texto_matriz(
     renderizado = [[numero_compacto(valor, modo, precision) for valor in fila] for fila in matriz]
     anchos = [max(len(renderizado[i][j]) for i in range(len(renderizado))) for j in range(variables + 1)]
     lineas = []
-    for i, fila in enumerate(renderizado):
+    for i, (fila, (izq, der)) in enumerate(zip(renderizado, corchetes_matriz(len(matriz)))):
         izquierdo = "  ".join(fila[j].rjust(anchos[j]) for j in range(variables))
         derecho = fila[-1].rjust(anchos[-1])
         prefijo = f"{nombre_fila(i)}  " if prefijo_fila else ""
-        lineas.append(f"{prefijo}⎡ {izquierdo}  │  {derecho} ⎤")
+        lineas.append(f"{prefijo}{izq} {izquierdo}  │  {derecho} {der}")
     return "\n".join(lineas)
 
 

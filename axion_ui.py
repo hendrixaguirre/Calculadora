@@ -125,6 +125,31 @@ class BarraDesplazamientoAutomaticaAxion(ttk.Scrollbar):
         super().set(inferior, superior_limite)
 
 
+def crear_corchetes_matriz(parent, filas, columna_izquierda, columna_derecha,
+                          *, fila=1, background=TemaAxion.PAPEL):
+    """Un par de corchetes compartido por visores y editores de matrices.
+
+    Conserva el rowspan del editor de sistemas y dibuja líneas continuas
+    que se ajustan a la altura real de las celdas, también al redimensionar.
+    """
+    corchetes = []
+    for lado, columna in (("izquierdo", columna_izquierda), ("derecho", columna_derecha)):
+        lienzo = tk.Canvas(parent, width=16, height=1, background=background,
+                            highlightthickness=0)
+        lienzo.grid(row=fila, column=columna, rowspan=filas, sticky="ns")
+
+        def dibujar(event, canvas=lienzo, lado=lado):
+            canvas.delete("corchete")
+            exterior, interior = (3, event.width-3) if lado == "izquierdo" else (event.width-3, 3)
+            canvas.create_line(interior, 2, exterior, 2, exterior, event.height-2,
+                               interior, event.height-2, width=2, fill=TemaAxion.TINTA,
+                               tags="corchete")
+
+        lienzo.bind("<Configure>", dibujar)
+        corchetes.append(lienzo)
+    return tuple(corchetes)
+
+
 class VistaMatrizAxion(tk.Frame):
     """Representa una matriz con significado visual para filas, pivote y cambios."""
 
@@ -181,14 +206,7 @@ class VistaMatrizAxion(tk.Frame):
             tk.Frame(self, bg=TemaAxion.LINEA_OSCURA, width=1).grid(
                 row=indice_fila + 1, column=variables + 4, sticky="ns", padx=6)
         filas = len(matriz)
-        left = "[" if filas == 1 else "\n".join(["⎡"] + ["⎢"] * (filas - 2) + ["⎣"])
-        right = "]" if filas == 1 else "\n".join(["⎤"] + ["⎥"] * (filas - 2) + ["⎦"])
-        tk.Label(self, text=left, bg=background, fg=TemaAxion.TINTA,
-                 font=(TemaAxion.FUENTE_MONO, 21 if not compacta else 17)).grid(
-                     row=1, column=2, rowspan=filas, sticky="e", padx=(8, 0))
-        tk.Label(self, text=right, bg=background, fg=TemaAxion.TINTA,
-                 font=(TemaAxion.FUENTE_MONO, 21 if not compacta else 17)).grid(
-                     row=1, column=variables + 6, rowspan=filas, sticky="w")
+        self.corchetes = crear_corchetes_matriz(self, filas, 2, variables + 6, background=background)
 
     @staticmethod
     def _subindice(value):
@@ -503,15 +521,9 @@ class EditorSistemaAxion(tk.Frame):
         tk.Label(grid, text="b", bg=TemaAxion.PAPEL, fg=TemaAxion.INDIGO,
                  font=(TemaAxion.FUENTE_SANS, 10, "bold")).grid(
                      row=0, column=variables + 2, pady=(0, 6))
-        left = "[" if filas == 1 else "\n".join(["⎡"] + ["⎢"] * (filas - 2) + ["⎣"])
-        right = "]" if filas == 1 else "\n".join(["⎤"] + ["⎥"] * (filas - 2) + ["⎦"])
-        tk.Label(grid, text=left, bg=TemaAxion.PAPEL, fg=TemaAxion.TINTA,
-                 font=(TemaAxion.FUENTE_MONO, 24)).grid(row=1, column=0, rowspan=filas, sticky="ns")
+        self.corchetes = crear_corchetes_matriz(grid, filas, 0, variables + 3)
         tk.Frame(grid, bg=TemaAxion.LINEA_OSCURA, width=1).grid(
             row=1, column=variables + 1, rowspan=filas, sticky="ns", padx=7, pady=3)
-        tk.Label(grid, text=right, bg=TemaAxion.PAPEL, fg=TemaAxion.TINTA,
-                 font=(TemaAxion.FUENTE_MONO, 24)).grid(
-                     row=1, column=variables + 3, rowspan=filas, sticky="ns")
         self.suspender_eventos = True
         for row in range(filas):
             variables_fila, entradas_fila = [], []

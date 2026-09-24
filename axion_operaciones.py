@@ -10,7 +10,7 @@ from fractions import Fraction
 from typing import Sequence
 
 from axion_core import (Numero, Matriz, ResultadoCalculo, a_fraccion,
-                        resolver_sistema, formatear_numero, construir_reporte)
+                        resolver_sistema, formatear_numero, construir_reporte, corchetes_matriz)
 
 MAX_DIMENSION = 8
 MAX_PEGADO = 4096
@@ -816,7 +816,67 @@ def calcular_operacion(operacion, a, b=None, escalar=None) -> ResultadoOperacion
 
 def texto_tabla(matriz, modo='fracciones'):
     """Texto sin truncamientos; conserva signo y valor exacto en vista decimal."""
-    return '\n'.join('[ ' + '   '.join(formatear_numero(v, modo) for v in fila) + ' ]' for fila in matriz)
+    if not matriz:
+        return ''
+    filas = [[formatear_numero(v, modo) for v in fila] for fila in matriz]
+    anchos = [max(len(fila[j]) for fila in filas) for j in range(len(filas[0]))]
+    return '\n'.join(
+        izq + ' ' + '   '.join(v.rjust(anchos[j]) for j, v in enumerate(fila)) + ' ' + der
+        for fila, (izq, der) in zip(filas, corchetes_matriz(len(filas)))
+    )
+
+
+def texto_vectores(vectores, modo='fracciones'):
+    """Una colección de vectores no constituye una única matriz de entrada."""
+    return '\n'.join(f'v{i+1} = {texto_tabla([v], modo)}' for i, v in enumerate(vectores))
+
+
+def pasos_propiedad(resultado: ResultadoOperacion, modo='fracciones') -> list[str]:
+    """Presenta la evidencia ya calculada; no vuelve a ejecutar la operación."""
+    p = resultado.propiedad
+    if p is None:
+        return []
+    f = lambda x: formatear_numero(x, modo)
+    vector = lambda v: '(' + ', '.join(f(x) for x in v) + ')'
+
+    def producto(nombre, entrada, salida):
+        lineas = [f'{nombre} = {vector(salida)}', 'Producto de cada fila de A por el vector:']
+        for i, fila in enumerate(p['matriz']):
+            expresion = ' + '.join(f'({f(a)})·({f(x)})' for a, x in zip(fila, entrada))
+            lineas.append(f'Componente {i+1}: {expresion} = {f(salida[i])}')
+        return '\n\n'.join(lineas)
+
+    def suma(nombre, u, v, salida):
+        return f'{nombre} = {vector(salida)}\n\n' + '\n'.join(
+            f'Componente {i+1}: ({f(x)}) + ({f(y)}) = {f(z)}'
+            for i, (x, y, z) in enumerate(zip(u, v, salida)))
+
+    def escala(nombre, entrada, salida):
+        return f'{nombre} = {vector(salida)}\n\n' + '\n'.join(
+            f'Componente {i+1}: ({f(p["escalar"])})·({f(x)}) = {f(y)}'
+            for i, (x, y) in enumerate(zip(entrada, salida)))
+
+    inicial = (f'Estado inicial · {OPERACIONES[resultado.operacion]}\n\n'
+               f'A =\n{texto_tabla(p["matriz"], modo)}\n\nu = {vector(p["u"])}')
+    if resultado.operacion == 'propiedad_distributiva':
+        pasos = [
+            inicial + f'\nv = {vector(p["v"])}',
+            suma('u + v', p['u'], p['v'], p['u_mas_v']),
+            'Lado izquierdo\n\n' + producto('A(u + v)', p['u_mas_v'], p['lado_izquierdo']),
+            producto('Au', p['u'], p['au']),
+            producto('Av', p['v'], p['av']),
+            'Lado derecho\n\n' + suma('Au + Av', p['au'], p['av'], p['lado_derecho']),
+        ]
+    else:
+        pasos = [
+            inicial + f'\nc = {f(p["escalar"])}',
+            escala('cu', p['u'], p['cu']),
+            'Lado izquierdo\n\n' + producto('A(cu)', p['cu'], p['lado_izquierdo']),
+            producto('Au', p['u'], p['au']),
+            'Lado derecho\n\n' + escala('c(Au)', p['au'], p['lado_derecho']),
+        ]
+    pasos.append(resumen_propiedad(resultado, modo))
+    return pasos
 
 
 def resumen_propiedad(resultado: ResultadoOperacion, modo='fracciones') -> str:
@@ -832,6 +892,11 @@ def resumen_propiedad(resultado: ResultadoOperacion, modo='fracciones') -> str:
     vector = lambda x: '(' + ', '.join(
         f(valor) for valor in x
     ) + ')'
+    comparacion = '\n'.join(
+        f'Componente {i+1}: {f(izq)} {"=" if izq == der else "≠"} {f(der)}; '
+        f'diferencia exacta: {f(izq - der)}'
+        for i, (izq, der) in enumerate(zip(p['lado_izquierdo'], p['lado_derecho']))
+    ) + '\n\n'
 
     # =========================================================
     # PROPIEDAD DISTRIBUTIVA
@@ -861,7 +926,7 @@ def resumen_propiedad(resultado: ResultadoOperacion, modo='fracciones') -> str:
             'VERIFICACIÓN\n'
             'A(u + v) = Au + Av\n\n'
 
-            + (
+            + comparacion + (
                 '✓ La propiedad se cumple.'
                 if p['se_cumple']
                 else '✗ La propiedad no se cumple.'
@@ -895,7 +960,7 @@ def resumen_propiedad(resultado: ResultadoOperacion, modo='fracciones') -> str:
             'VERIFICACIÓN\n'
             'A(cu) = c(Au)\n\n'
 
-            + (
+            + comparacion + (
                 '✓ La propiedad se cumple.'
                 if p['se_cumple']
                 else '✗ La propiedad no se cumple.'
@@ -1050,13 +1115,13 @@ def reporte_operacion(r: ResultadoOperacion, modo='fracciones') -> str:
         'AXION — Álgebra lineal, paso a paso',
         OPERACIONES[r.operacion],
         f'Entrada A / matriz: {len(r.a)}×{len(r.a[0])}',
-        texto_tabla(r.a, modo)
+        texto_vectores(r.a, modo) if r.operacion == 'combinacion' else texto_tabla(r.a, modo)
     ]
 
     if r.b is not None:
         partes.extend([
             f'Entrada B / vectores: {len(r.b)}×{len(r.b[0])}',
-            texto_tabla(r.b, modo)
+            texto_vectores(r.b, modo) if r.operacion == 'propiedad_distributiva' else texto_tabla(r.b, modo)
         ])
 
     if r.escalar is not None:

@@ -141,7 +141,9 @@ class AplicacionPrograma3(AplicacionAxion):
                 return
             r = registros[lista.curselection()[0]]
             if r.get('kind') == 'operacion':
-                clave = 'vectores' if r['operation'].startswith('vector') else 'combinacion' if r['operation'] == 'combinacion' else 'matrices'
+                clave = ('propiedades' if r['operation'].startswith('propiedad_') else
+                         'vectores' if r['operation'].startswith('vector') else
+                         'combinacion' if r['operation'] == 'combinacion' else 'matrices')
                 self.mostrar_modulo(clave)
                 self.espacios[clave].seleccionar(r['operation'])
                 t = self.espacios[clave].actual

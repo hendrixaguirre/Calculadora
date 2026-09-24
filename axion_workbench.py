@@ -13,8 +13,9 @@ from tkinter import ttk, messagebox, filedialog
 
 from axion_core import formatear_numero, texto_matriz
 from axion_operaciones import (OPERACIONES, dimension, interpretar_tabla,
-    calcular_operacion, texto_tabla, resumen_combinacion, resumen_propiedad,reporte_operacion)
-from axion_ui import TemaAxion as T, AreaDesplazableAxion
+    calcular_operacion, texto_tabla, texto_vectores, pasos_propiedad,
+    resumen_combinacion, resumen_propiedad, reporte_operacion)
+from axion_ui import TemaAxion as T, AreaDesplazableAxion, crear_corchetes_matriz
 
 
 def texto_lectura(parent):
@@ -27,6 +28,9 @@ def texto_lectura(parent):
     barra = ttk.Scrollbar(marco, orient='vertical', command=texto.yview)
     texto.configure(yscrollcommand=barra.set)
     barra.pack(side='right', fill='y')
+    horizontal = ttk.Scrollbar(marco, orient='horizontal', command=texto.xview)
+    texto.configure(xscrollcommand=horizontal.set)
+    horizontal.pack(side='bottom', fill='x')
     texto.pack(fill='both', expand=True)
     return texto
 
@@ -37,9 +41,9 @@ def escribir(texto, contenido):
     texto.insert('1.0', contenido)
     texto.tag_configure('titulo', font=(T.FUENTE_SANS, 16, 'bold'), foreground=T.TINTA, spacing3=10)
     texto.tag_add('titulo', '1.0', '1.end')
-    texto.tag_configure('numero', font=(T.FUENTE_MONO, 15), spacing1=3, spacing3=3)
+    texto.tag_configure('numero', font=(T.FUENTE_MONO, 15), spacing1=0, spacing3=0, wrap='none')
     for indice, linea in enumerate(contenido.splitlines(), 1):
-        if linea.startswith('[ '):
+        if linea.startswith(('[ ', '⎡ ', '⎢ ', '⎣ ')):
             texto.tag_add('numero', f'{indice}.0', f'{indice}.end')
     texto.configure(state='disabled')
 
@@ -78,10 +82,17 @@ class EditorTabla(ttk.LabelFrame):
         self.filas.set(str(len(valores)))
         self.columnas.set(str(len(valores[0])))
         self.variables, self.celdas = [], []
+        es_matriz = not (self.vector or self.combinacion)
+        desplazamiento = 2 if es_matriz else 1
+        self.corchetes = (crear_corchetes_matriz(self.area.contenido, len(valores), 1,
+                                              len(valores[0]) + 2) if es_matriz else ())
         for j in range(len(valores[0])):
-            ttk.Label(self.area.contenido, text=f'{"Componente" if self.vector or self.combinacion else "Columna"} {j+1}').grid(row=0, column=j+1, padx=8)
+            ttk.Label(self.area.contenido, text=f'{"Componente" if self.vector or self.combinacion else "Columna"} {j+1}').grid(row=0, column=j+desplazamiento, padx=8)
         for i, fila in enumerate(valores):
-            ttk.Label(self.area.contenido, text=f'v{i+1}' if self.combinacion else str(i+1)).grid(row=i+1, column=0, padx=6)
+            etiqueta = f'v{i+1}' if self.combinacion else str(i+1)
+            if self.combinacion and self.taller.operacion == 'propiedad_distributiva' and i < 2:
+                etiqueta = ('u', 'v')[i]
+            ttk.Label(self.area.contenido, text=etiqueta).grid(row=i+1, column=0, padx=6)
             variables, celdas = [], []
             for j, valor in enumerate(fila):
                 var = tk.StringVar(value=str(valor))
@@ -89,7 +100,7 @@ class EditorTabla(ttk.LabelFrame):
                                   justify='center', font=(T.FUENTE_MONO, 13))
                 celda.configure(validate='key', validatecommand=(self.register(lambda texto: len(texto) <= 64), '%P'),
                                 invalidcommand=lambda: self.taller.estado.set('Máximo 64 caracteres por número; reduce la longitud.'))
-                celda.grid(row=i+1, column=j+1, padx=4, pady=4, ipady=5)
+                celda.grid(row=i+1, column=j+desplazamiento, padx=4, pady=4, ipady=5)
                 var.trace_add('write', lambda *_, v=var, c=celda: self.editar(v, c))
                 celda.bind('<Control-v>', self.pegado_teclado)
                 celda.bind('<Control-V>', self.pegado_teclado)
@@ -433,7 +444,7 @@ class TallerOperacion(ttk.Frame):
                 filas=2,
                 columnas=2,
                 vector=False,
-                combinacion=False
+                combinacion=True
             )
 
             self.b.grid(
@@ -909,6 +920,10 @@ class TallerOperacion(ttk.Frame):
         elif self.operacion == 'combinacion':
             self.forma.set(f'n = {self.a.columnas.get()}, k = {self.a.filas.get()}; V: {self.a.columnas.get()}×{self.a.filas.get()}. '
                            'n y k son independientes. Objetivo b: una fila de n componentes.')
+        elif self.operacion.startswith('propiedad_'):
+            self.forma.set(f'A: {a}. Las columnas de A deben coincidir con la dimensión de u'
+                           + (' y v; introduce un vector por fila.' if self.operacion == 'propiedad_distributiva'
+                              else '; introduce u en una fila y el escalar c.'))
         else:
             self.forma.set(f'Entrada A / u: {a}' + (f' · B / v: {b}. Suma y resta requieren formas iguales.' if self.b else ' · λ multiplica todas las entradas.'))
 
@@ -971,7 +986,15 @@ class TallerOperacion(ttk.Frame):
 
     def numero_pasos(self):
         r = self.resultado
-        return 1 + len(r.sistema.pasos) if r.sistema else 1 + len(r.salida)*len(r.salida[0])
+        if r is None:
+            return 0
+        if r.sistema is not None:
+            return 1 + len(r.sistema.pasos)
+        if r.propiedad is not None:
+            return len(pasos_propiedad(r))
+        if r.salida:
+            return 1 + len(r.salida)*len(r.salida[0])
+        return 1
 
     def cambiar_paso(self, delta):
         if self.resultado:
@@ -979,19 +1002,28 @@ class TallerOperacion(ttk.Frame):
             self.renderizar_paso()
 
     def renderizar_paso(self):
+        if self.resultado is None:
+            return
         r, modo = self.resultado, self.app.modo_visualizacion.get()
         n = self.numero_pasos()
         self.indicador.configure(text=f'Paso {self.paso+1} de {n}')
         self.atras.configure(state='disabled' if self.paso == 0 else 'normal')
         self.adelante.configure(state='disabled' if self.paso == n-1 else 'normal')
-        if self.paso == 0:
+        if r.propiedad is not None:
+            contenido = pasos_propiedad(r, modo)[self.paso]
+        elif self.paso == 0:
             contenido = f'Estado inicial · {OPERACIONES[self.operacion]}\n\nA / vectores dados:\n{texto_tabla(r.a, modo)}'
+            if r.sistema is not None:
+                contenido = f'Estado inicial · {OPERACIONES[self.operacion]}\n\nVectores dados:\n{texto_vectores(r.a, modo)}'
             if r.b is not None:
                 contenido += f'\n\nB / objetivo b:\n{texto_tabla(r.b, modo)}'
             if r.escalar is not None:
                 contenido += f'\n\nλ = {formatear_numero(r.escalar, modo)}'
             if r.sistema:
-                contenido += '\n\nV = [v₁ v₂ … vₖ]: los vectores pasan de las filas del editor a COLUMNAS.\nVc=b; cada incógnita cᵢ multiplica vᵢ.\n[V|b]:\n' + texto_matriz(r.sistema.original, modo)
+                contenido += ('\n\nV = [v₁ v₂ … vₖ]: los vectores pasan de las filas del editor a COLUMNAS.\n'
+                              'Vc=b; cada incógnita cᵢ multiplica vᵢ.\nV =\n'
+                              + texto_tabla([fila[:-1] for fila in r.sistema.original], modo)
+                              + '\n\n[V|b]:\n' + texto_matriz(r.sistema.original, modo))
             elif self.operacion == 'matriz_producto':
                 contenido += f'\n\nA {len(r.a)}×{len(r.a[0])}, B {len(r.b)}×{len(r.b[0])}; C tendrá {len(r.salida)}×{len(r.salida[0])} celdas.\nPara cada c[i,j], r recorre la fila i de A y la columna j de B.'
         elif r.sistema:
@@ -1017,12 +1049,18 @@ class TallerOperacion(ttk.Frame):
             return
         r, modo = self.resultado, self.app.modo_visualizacion.get()
         
-        if r.sistema:
-            escribir(self.texto_resultado, resumen_combinacion(r.sistema, modo))
+        if r.sistema is not None or r.propiedad is not None or not r.salida:
+            contenido = (resumen_combinacion(r.sistema, modo) if r.sistema is not None
+                         else resumen_propiedad(r, modo) if r.propiedad is not None
+                         else 'No hay datos de resultado para mostrar.')
+            escribir(self.texto_resultado, contenido)
             self.selector.grid_remove()
             self.detalle.master.grid_remove()
             self.final.rowconfigure(2, weight=0)
         else:
+            self.selector.grid()
+            self.detalle.master.grid()
+            self.final.rowconfigure(2, weight=1)
             escribir(self.texto_resultado, f'Cálculo exacto · resultado {len(r.salida)}×{len(r.salida[0])}\n\n' + texto_tabla(r.salida, modo)
                      + '\n\nSelecciona una celda para ver sus operandos y desarrollo.\nEn Decimales, ≈ indica una presentación aproximada; el valor exacto se conserva.')
             self.celda.configure(values=[f'[{i+1},{j+1}]' for i in range(len(r.salida)) for j in range(len(r.salida[0]))])
@@ -1040,6 +1078,10 @@ class TallerOperacion(ttk.Frame):
         op = self.operacion
         if op == 'combinacion':
             a, b, escalar = [[1, 0, 1], [0, 1, 1]], [[2, 3, 5]], ''
+        elif op == 'propiedad_distributiva':
+            a, b, escalar = [[1, 2], [3, 4]], [[1, 2], [3, 1]], ''
+        elif op == 'propiedad_escalar':
+            a, b, escalar = [[1, 2], [3, 4]], [[2, 1]], '3'
         elif op.startswith('vector'):
             a, b, escalar = [['1/2', -2, 3]], [['3/2', 5, -1]], '-2'
         elif op == 'matriz_producto':
