@@ -13,7 +13,7 @@ from tkinter import ttk, messagebox, filedialog
 
 from axion_core import formatear_numero, texto_matriz
 from axion_operaciones import (OPERACIONES, dimension, interpretar_tabla,
-    calcular_operacion, texto_tabla, resumen_combinacion, reporte_operacion)
+    calcular_operacion, texto_tabla, resumen_combinacion, resumen_propiedad,reporte_operacion)
 from axion_ui import TemaAxion as T, AreaDesplazableAxion
 
 
@@ -167,8 +167,10 @@ class EditorTabla(ttk.LabelFrame):
 
 class TallerOperacion(ttk.Frame):
     """Controlador de una operación: cálculo explícito, versiones y navegación."""
+
     def __init__(self, parent, app, operacion):
         super().__init__(parent, padding=(18, 8))
+
         self.app, self.operacion = app, operacion
         self.resultado = None
         self.resuelta = None
@@ -176,107 +178,679 @@ class TallerOperacion(ttk.Frame):
         self.suspendido = True
         self.deshacer_pila = []
         self.anterior = None
+
         self.escalar = tk.StringVar(value='')
-        self.estado = tk.StringVar(value='Define todos los valores. Las celdas vacías no son cero.')
+        self.estado = tk.StringVar(
+            value='Define todos los valores. Las celdas vacías no son cero.'
+        )
+
         self.notebook = ttk.Notebook(self)
-        ttk.Label(self, textvariable=self.estado, wraplength=900, style='Nota.Axion.TLabel').pack(side='bottom', fill='x', pady=(8, 0))
-        self.notebook.pack(fill='both', expand=True)
-        self.definir = ttk.Frame(self.notebook, padding=12)
-        self.scroll_definir = AreaDesplazableAxion(self.definir, background=T.LIENZO)
-        self.scroll_definir.pack(fill='both', expand=True)
+
+        ttk.Label(
+            self,
+            textvariable=self.estado,
+            wraplength=900,
+            style='Nota.Axion.TLabel'
+        ).pack(
+            side='bottom',
+            fill='x',
+            pady=(8, 0)
+        )
+
+        self.notebook.pack(
+            fill='both',
+            expand=True
+        )
+
+        self.definir = ttk.Frame(
+            self.notebook,
+            padding=12
+        )
+
+        self.scroll_definir = AreaDesplazableAxion(
+            self.definir,
+            background=T.LIENZO
+        )
+
+        self.scroll_definir.pack(
+            fill='both',
+            expand=True
+        )
+
         self.contenido_definir = self.scroll_definir.contenido
-        self.procedimiento = ttk.Frame(self.notebook, padding=12)
-        self.final = ttk.Frame(self.notebook, padding=12)
-        for pagina, nombre in ((self.definir, '1. Definir'), (self.procedimiento, '2. Procedimiento'), (self.final, '3. Resultado y comprobación')):
-            self.notebook.add(pagina, text=nombre)
-        self.notebook.tab(1, state='disabled')
-        self.notebook.tab(2, state='disabled')
-        ttk.Label(self.contenido_definir, text=OPERACIONES[operacion], style='Titulo.Axion.TLabel').pack(anchor='w', pady=(0, 5))
-        ayuda = ('Introduce un vector vᵢ por fila. AXION lo colocará como columna de V para resolver Vc=b.'
-                 if operacion == 'combinacion' else 'Racionales exactos · 1–8 por eje · enteros, decimales o fracciones.')
-        ttk.Label(self.contenido_definir, text=ayuda, wraplength=740).pack(anchor='w', pady=(0, 8))
+
+        self.procedimiento = ttk.Frame(
+            self.notebook,
+            padding=12
+        )
+
+        self.final = ttk.Frame(
+            self.notebook,
+            padding=12
+        )
+
+        for pagina, nombre in (
+            (self.definir, '1. Definir'),
+            (self.procedimiento, '2. Procedimiento'),
+            (self.final, '3. Resultado y comprobación')
+        ):
+            self.notebook.add(
+                pagina,
+                text=nombre
+            )
+
+        self.notebook.tab(
+            1,
+            state='disabled'
+        )
+
+        self.notebook.tab(
+            2,
+            state='disabled'
+        )
+
+        ttk.Label(
+            self.contenido_definir,
+            text=OPERACIONES[operacion],
+            style='Titulo.Axion.TLabel'
+        ).pack(
+            anchor='w',
+            pady=(0, 5)
+        )
+
+        ayuda = (
+            'Introduce un vector vᵢ por fila. AXION lo colocará como columna de V para resolver Vc=b.'
+            if operacion == 'combinacion'
+            else
+            'Racionales exactos · 1–8 por eje · enteros, decimales o fracciones.'
+        )
+
+        ttk.Label(
+            self.contenido_definir,
+            text=ayuda,
+            wraplength=740
+        ).pack(
+            anchor='w',
+            pady=(0, 8)
+        )
+
         self.forma = tk.StringVar()
-        ttk.Label(self.contenido_definir, textvariable=self.forma, style='Nota.Axion.TLabel', wraplength=750).pack(anchor='w', pady=(0, 8))
-        self.editores = ttk.Frame(self.contenido_definir)
-        self.editores.pack(fill='both', expand=True)
-        self.selector_editor = ttk.Frame(self.contenido_definir)
-        self.editor_visible = tk.StringVar(value='a')
-        for clave, etiqueta in [('a', 'Editar A / vectores dados'), ('b', 'Editar B / objetivo')]:
-            ttk.Radiobutton(self.selector_editor, text=etiqueta, variable=self.editor_visible,
-                            value=clave, command=self.mostrar_editor).pack(side='left', padx=(0, 16))
-        self.editores.columnconfigure(0, weight=1)
-        self.editores.rowconfigure(0, weight=1)
+
+        ttk.Label(
+            self.contenido_definir,
+            textvariable=self.forma,
+            style='Nota.Axion.TLabel',
+            wraplength=750
+        ).pack(
+            anchor='w',
+            pady=(0, 8)
+        )
+
+        self.editores = ttk.Frame(
+            self.contenido_definir
+        )
+
+        self.editores.pack(
+            fill='both',
+            expand=True
+        )
+
+        self.selector_editor = ttk.Frame(
+            self.contenido_definir
+        )
+
+        self.editor_visible = tk.StringVar(
+            value='a'
+        )
+
+        for clave, etiqueta in [
+            ('a', 'Editar A / vectores dados'),
+            ('b', 'Editar B / objetivo')
+        ]:
+            ttk.Radiobutton(
+                self.selector_editor,
+                text=etiqueta,
+                variable=self.editor_visible,
+                value=clave,
+                command=self.mostrar_editor
+            ).pack(
+                side='left',
+                padx=(0, 16)
+            )
+
+        self.editores.columnconfigure(
+            0,
+            weight=1
+        )
+
+        self.editores.rowconfigure(
+            0,
+            weight=1
+        )
+
+        # =====================================================
+        # IDENTIFICAR EL TIPO DE OPERACIÓN
+        # =====================================================
+
         es_vector = operacion.startswith('vector')
-        combinacion = operacion == 'combinacion'
-        escalar = operacion.endswith('escalar')
-        self.a = EditorTabla(self.editores, self, 'Vectores v₁,…,vₖ' if combinacion else 'Vector u' if es_vector else 'Matriz A',
-                             filas=1 if es_vector else 2, columnas=3 if es_vector or combinacion else 2,
-                             vector=es_vector, combinacion=combinacion)
-        self.a.grid(row=0, column=0, sticky='nsew', pady=3)
-        self.b = None
-        if not escalar:
-            self.b = EditorTabla(self.editores, self, 'Objetivo b' if combinacion else 'Vector v' if es_vector else 'Matriz B',
-                                 filas=1 if es_vector or combinacion else 2,
-                                 columnas=3 if es_vector or combinacion else 2, vector=es_vector or combinacion)
-            self.b.grid(row=1, column=0, sticky='nsew', pady=3)
-            self.editores.rowconfigure(1, weight=1)
+
+        combinacion = (
+            operacion == 'combinacion'
+        )
+
+        propiedad_distributiva = (
+            operacion == 'propiedad_distributiva'
+        )
+
+        propiedad_escalar = (
+            operacion == 'propiedad_escalar'
+        )
+
+        # Las propiedades tienen su propio tratamiento.
+        # No debemos considerar propiedad_escalar como una
+        # operación normal que termina en "escalar".
+
+        escalar = (
+            operacion.endswith('escalar')
+            and not propiedad_escalar
+        )
+
+        # =====================================================
+        # EDITOR A
+        # =====================================================
+
+        if propiedad_distributiva or propiedad_escalar:
+
+            nombre_a = 'Matriz A'
+            filas_a = 2
+            columnas_a = 2
+            vector_a = False
+            combinacion_a = False
+
         else:
-            fila = ttk.Frame(self.contenido_definir)
-            fila.pack(fill='x', pady=8)
-            ttk.Label(fila, text='Escalar λ').pack(side='left', padx=(0, 10))
-            ttk.Entry(fila, textvariable=self.escalar, width=24, font=(T.FUENTE_MONO, 13)).pack(side='left')
-        self.escalar.trace_add('write', lambda *_: self.cambio())
-        acciones = ttk.Frame(self.contenido_definir)
-        acciones.pack(fill='x', pady=8, before=self.editores)
-        ttk.Button(acciones, text=OPERACIONES[operacion], style='Accion.Axion.TButton', command=self.calcular).grid(row=0, column=0, sticky='w', pady=(0, 5))
-        ttk.Button(acciones, text='Ejemplo', command=self.ejemplo).grid(row=0, column=1, padx=7)
-        editar = ttk.Menubutton(acciones, text='Editar entrada')
-        menu = tk.Menu(editar, tearoff=False, font=(T.FUENTE_SANS, 11))
-        menu.add_command(label='Limpiar entrada', command=self.limpiar)
-        menu.add_command(label='Rellenar vacíos con 0', command=self.rellenar)
-        editar.configure(menu=menu)
-        editar.grid(row=0, column=2, padx=7)
-        self.boton_deshacer = ttk.Button(acciones, text='Deshacer edición', command=self.deshacer, state='disabled')
-        self.boton_deshacer.grid(row=0, column=3, padx=7)
-        nav = ttk.Frame(self.procedimiento)
-        nav.pack(fill='x')
-        self.atras = ttk.Button(nav, text='Anterior', command=lambda: self.cambiar_paso(-1))
-        self.atras.pack(side='left')
-        self.indicador = ttk.Label(nav, text='Paso 1')
-        self.indicador.pack(side='left', padx=16)
-        self.adelante = ttk.Button(nav, text='Siguiente', command=lambda: self.cambiar_paso(1))
-        self.adelante.pack(side='left')
-        ttk.Button(nav, text='Ir al resultado', command=lambda: self.notebook.select(2)).pack(side='right')
-        self.texto_paso = texto_lectura(self.procedimiento)
-        self.texto_resultado = texto_lectura(self.final)
-        self.selector = ttk.Frame(self.final)
-        self.selector.pack(fill='x')
-        ttk.Label(self.selector, text='Inspeccionar celda / componente:').pack(side='left')
-        self.celda = ttk.Combobox(self.selector, state='readonly', width=12)
-        self.celda.pack(side='left', padx=8)
-        self.celda.bind('<<ComboboxSelected>>', lambda _e: self.detalle_seleccionado())
-        self.detalle = texto_lectura(self.final)
-        self.detalle.configure(height=4)
-        exportar = ttk.Frame(self.final)
-        exportar.pack(fill='x')
-        for etiqueta, comando in [('Copiar resultado', self.copiar), ('Guardar TXT', lambda: self.guardar('txt')),
-                                  ('Guardar HTML', lambda: self.guardar('html')), ('Editar una copia', self.restaurar)]:
-            ttk.Button(exportar, text=etiqueta, command=comando).pack(side='left', padx=(0, 8))
-        # Las filas flexibles ceden espacio antes que los controles de navegación.
+
+            nombre_a = (
+                'Vectores v₁,…,vₖ'
+                if combinacion
+                else
+                'Vector u'
+                if es_vector
+                else
+                'Matriz A'
+            )
+
+            filas_a = (
+                1
+                if es_vector
+                else
+                2
+            )
+
+            columnas_a = (
+                3
+                if es_vector or combinacion
+                else
+                2
+            )
+
+            vector_a = es_vector
+            combinacion_a = combinacion
+
+        self.a = EditorTabla(
+            self.editores,
+            self,
+            nombre_a,
+            filas=filas_a,
+            columnas=columnas_a,
+            vector=vector_a,
+            combinacion=combinacion_a
+        )
+
+        self.a.grid(
+            row=0,
+            column=0,
+            sticky='nsew',
+            pady=3
+        )
+
+        # =====================================================
+        # EDITOR B
+        # =====================================================
+
+        self.b = None
+
+        # -----------------------------------------------------
+        # PROPIEDAD DISTRIBUTIVA
+        # A(u + v) = Au + Av
+        # -----------------------------------------------------
+
+        if propiedad_distributiva:
+
+            self.b = EditorTabla(
+                self.editores,
+                self,
+                'Vectores u y v',
+                filas=2,
+                columnas=2,
+                vector=False,
+                combinacion=False
+            )
+
+            self.b.grid(
+                row=0,
+                column=1,
+                sticky='nsew',
+                padx=(8, 0),
+                pady=3
+            )
+
+            self.editores.columnconfigure(
+                1,
+                weight=1
+            )
+
+        # -----------------------------------------------------
+        # PROPIEDAD DEL ESCALAR
+        # A(cu) = c(Au)
+        # -----------------------------------------------------
+
+        elif propiedad_escalar:
+
+            self.b = EditorTabla(
+                self.editores,
+                self,
+                'Vector u',
+                filas=1,
+                columnas=2,
+                vector=True,
+                combinacion=False
+            )
+
+            self.b.grid(
+                row=1,
+                column=0,
+                sticky='nsew',
+                pady=3
+            )
+
+            self.editores.rowconfigure(
+                1,
+                weight=1
+            )
+
+            # Escalar c
+            fila = ttk.Frame(
+                self.contenido_definir
+            )
+
+            fila.pack(
+                fill='x',
+                pady=8
+            )
+
+            ttk.Label(
+                fila,
+                text='Escalar c'
+            ).pack(
+                side='left',
+                padx=(0, 10)
+            )
+
+            ttk.Entry(
+                fila,
+                textvariable=self.escalar,
+                width=24,
+                font=(T.FUENTE_MONO, 13)
+            ).pack(
+                side='left'
+            )
+
+        # -----------------------------------------------------
+        # OPERACIONES NORMALES CON SEGUNDO OPERANDO
+        # -----------------------------------------------------
+
+        elif not escalar:
+
+            self.b = EditorTabla(
+                self.editores,
+                self,
+                (
+                    'Objetivo b'
+                    if combinacion
+                    else
+                    'Vector v'
+                    if es_vector
+                    else
+                    'Matriz B'
+                ),
+                filas=(
+                    1
+                    if es_vector or combinacion
+                    else
+                    2
+                ),
+                columnas=(
+                    3
+                    if es_vector or combinacion
+                    else
+                    2
+                ),
+                vector=es_vector or combinacion
+            )
+
+            self.b.grid(
+                row=1,
+                column=0,
+                sticky='nsew',
+                pady=3
+            )
+
+            self.editores.rowconfigure(
+                1,
+                weight=1
+            )
+
+        # -----------------------------------------------------
+        # OPERACIONES NORMALES CON ESCALAR
+        # -----------------------------------------------------
+
+        else:
+
+            fila = ttk.Frame(
+                self.contenido_definir
+            )
+
+            fila.pack(
+                fill='x',
+                pady=8
+            )
+
+            ttk.Label(
+                fila,
+                text='Escalar λ'
+            ).pack(
+                side='left',
+                padx=(0, 10)
+            )
+
+            ttk.Entry(
+                fila,
+                textvariable=self.escalar,
+                width=24,
+                font=(T.FUENTE_MONO, 13)
+            ).pack(
+                side='left'
+            )
+
+        # =====================================================
+        # EVENTOS Y BOTONES
+        # =====================================================
+
+        self.escalar.trace_add(
+            'write',
+            lambda *_: self.cambio()
+        )
+
+        acciones = ttk.Frame(
+            self.contenido_definir
+        )
+
+        acciones.pack(
+            fill='x',
+            pady=8,
+            before=self.editores
+        )
+
+        ttk.Button(
+            acciones,
+            text=OPERACIONES[operacion],
+            style='Accion.Axion.TButton',
+            command=self.calcular
+        ).grid(
+            row=0,
+            column=0,
+            sticky='w',
+            pady=(0, 5)
+        )
+
+        ttk.Button(
+            acciones,
+            text='Ejemplo',
+            command=self.ejemplo
+        ).grid(
+            row=0,
+            column=1,
+            padx=7
+        )
+
+        editar = ttk.Menubutton(
+            acciones,
+            text='Editar entrada'
+        )
+
+        menu = tk.Menu(
+            editar,
+            tearoff=False,
+            font=(T.FUENTE_SANS, 11)
+        )
+
+        menu.add_command(
+            label='Limpiar entrada',
+            command=self.limpiar
+        )
+
+        menu.add_command(
+            label='Rellenar vacíos con 0',
+            command=self.rellenar
+        )
+
+        editar.configure(
+            menu=menu
+        )
+
+        editar.grid(
+            row=0,
+            column=2,
+            padx=7
+        )
+
+        self.boton_deshacer = ttk.Button(
+            acciones,
+            text='Deshacer edición',
+            command=self.deshacer,
+            state='disabled'
+        )
+
+        self.boton_deshacer.grid(
+            row=0,
+            column=3,
+            padx=7
+        )
+
+        # =====================================================
+        # PROCEDIMIENTO
+        # =====================================================
+
+        nav = ttk.Frame(
+            self.procedimiento
+        )
+
+        nav.pack(
+            fill='x'
+        )
+
+        self.atras = ttk.Button(
+            nav,
+            text='Anterior',
+            command=lambda: self.cambiar_paso(-1)
+        )
+
+        self.atras.pack(
+            side='left'
+        )
+
+        self.indicador = ttk.Label(
+            nav,
+            text='Paso 1'
+        )
+
+        self.indicador.pack(
+            side='left',
+            padx=16
+        )
+
+        self.adelante = ttk.Button(
+            nav,
+            text='Siguiente',
+            command=lambda: self.cambiar_paso(1)
+        )
+
+        self.adelante.pack(
+            side='left'
+        )
+
+        ttk.Button(
+            nav,
+            text='Ir al resultado',
+            command=lambda: self.notebook.select(2)
+        ).pack(
+            side='right'
+        )
+
+        self.texto_paso = texto_lectura(
+            self.procedimiento
+        )
+
+        self.texto_resultado = texto_lectura(
+            self.final
+        )
+
+        self.selector = ttk.Frame(
+            self.final
+        )
+
+        self.selector.pack(
+            fill='x'
+        )
+
+        ttk.Label(
+            self.selector,
+            text='Inspeccionar celda / componente:'
+        ).pack(
+            side='left'
+        )
+
+        self.celda = ttk.Combobox(
+            self.selector,
+            state='readonly',
+            width=12
+        )
+
+        self.celda.pack(
+            side='left',
+            padx=8
+        )
+
+        self.celda.bind(
+            '<<ComboboxSelected>>',
+            lambda _e: self.detalle_seleccionado()
+        )
+
+        self.detalle = texto_lectura(
+            self.final
+        )
+
+        self.detalle.configure(
+            height=4
+        )
+
+        exportar = ttk.Frame(
+            self.final
+        )
+
+        exportar.pack(
+            fill='x'
+        )
+
+        for etiqueta, comando in [
+            ('Copiar resultado', self.copiar),
+            ('Guardar TXT', lambda: self.guardar('txt')),
+            ('Guardar HTML', lambda: self.guardar('html')),
+            ('Editar una copia', self.restaurar)
+        ]:
+            ttk.Button(
+                exportar,
+                text=etiqueta,
+                command=comando
+            ).pack(
+                side='left',
+                padx=(0, 8)
+            )
+
+        # =====================================================
+        # DISTRIBUCIÓN FINAL
+        # =====================================================
+
         for widget in self.final.winfo_children():
             widget.pack_forget()
-        self.final.columnconfigure(0, weight=1)
-        self.final.rowconfigure(0, weight=1)
-        self.final.rowconfigure(2, weight=1)
-        self.texto_resultado.configure(height=5)
-        self.texto_resultado.master.grid(row=0, column=0, sticky='nsew', pady=5)
-        self.selector.grid(row=1, column=0, sticky='ew')
-        self.detalle.master.grid(row=2, column=0, sticky='nsew', pady=5)
-        exportar.grid(row=3, column=0, sticky='ew', pady=5)
+
+        self.final.columnconfigure(
+            0,
+            weight=1
+        )
+
+        self.final.rowconfigure(
+            0,
+            weight=1
+        )
+
+        self.final.rowconfigure(
+            2,
+            weight=1
+        )
+
+        self.texto_resultado.configure(
+            height=5
+        )
+
+        self.texto_resultado.master.grid(
+            row=0,
+            column=0,
+            sticky='nsew',
+            pady=5
+        )
+
+        self.selector.grid(
+            row=1,
+            column=0,
+            sticky='ew'
+        )
+
+        self.detalle.master.grid(
+            row=2,
+            column=0,
+            sticky='nsew',
+            pady=5
+        )
+
+        exportar.grid(
+            row=3,
+            column=0,
+            sticky='ew',
+            pady=5
+        )
+
         self.suspendido = False
+
         self.anterior = self.instantanea()
+
         self.actualizar_forma()
-        self.editores.bind('<Configure>', self.distribuir)
+
+        self.editores.bind(
+            '<Configure>',
+            self.distribuir
+        )
+
         self._ancha = None
 
     def distribuir(self, event):
@@ -382,7 +956,7 @@ class TallerOperacion(ttk.Frame):
                     if (m, n) != (len(editor.variables), len(editor.variables[0])):
                         raise ValueError(f'{editor.nombre}: pulsa Aplicar para confirmar las nuevas dimensiones')
             r = calcular_operacion(self.operacion, self.a.datos(), self.b.datos() if self.b else None,
-                                   self.escalar.get() if self.operacion.endswith('escalar') else None)
+                                   self.escalar.get() if self.operacion.endswith('escalar') or self.operacion == 'propiedad_escalar' else None)
         except ValueError as error:
             self.error(str(error))
             return
@@ -442,6 +1016,7 @@ class TallerOperacion(ttk.Frame):
         if not self.resultado:
             return
         r, modo = self.resultado, self.app.modo_visualizacion.get()
+        
         if r.sistema:
             escribir(self.texto_resultado, resumen_combinacion(r.sistema, modo))
             self.selector.grid_remove()

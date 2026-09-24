@@ -43,12 +43,13 @@ class AplicacionPrograma3(AplicacionAxion):
         self.navegacion.grid(row=1, column=0, sticky='ew')
         self.selector_modulo = tk.StringVar(value='sistemas')
         for clave, etiqueta in [('vectores', 'Vectores'), ('matrices', 'Matrices'),
-                                ('combinacion', 'Combinación lineal'), ('sistemas', 'Sistemas Ax=b')]:
+                                ('combinacion', 'Combinación lineal'), ('propiedades', 'Propiedades'), ('sistemas', 'Sistemas Ax=b')]:
             ttk.Radiobutton(self.navegacion, text=etiqueta, value=clave, variable=self.selector_modulo,
                             command=lambda k=clave: self.mostrar_modulo(k)).pack(side='left', padx=(0, 24))
         self.espacios['vectores'] = EspacioOperaciones(raiz, self, ['vector_suma', 'vector_resta', 'vector_escalar'])
         self.espacios['matrices'] = EspacioOperaciones(raiz, self, ['matriz_producto', 'matriz_suma', 'matriz_resta', 'matriz_escalar'])
         self.espacios['combinacion'] = EspacioOperaciones(raiz, self, ['combinacion'])
+        self.espacios['propiedades'] = EspacioOperaciones(raiz, self, ['propiedad_distributiva', 'propiedad_escalar'])
         raiz.bind('<Control-Return>', lambda _e: (self.resolver(), 'break')[1])
         raiz.bind('<Control-z>', lambda _e: self.deshacer_actual())
         raiz.bind('<Control-Z>', lambda _e: self.deshacer_actual())
